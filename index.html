@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+
+</head>
+<body>
+  <div id="htmlContent"><h1>Headline</h1>
+    <p>this is the rest of the content</p></div>
+  <script>
+
+function _arrayBufferToBase64( buffer ) {
+    var binary = '';
+    var bytes = new Uint8Array( buffer );
+    var len = bytes.byteLength;
+    for (var i = 0; i < len; i++) {
+        binary += String.fromCharCode( bytes[ i ] );
+    }
+    return window.btoa( binary );
+}
+// Function to generate PDF from HTML content
+function generatePDF() {
+    // Create a new jsPDF instance
+    const doc = new jspdf.jsPDF();
+
+    // Get the HTML content
+    const htmlContent = document.getElementById('htmlContent');
+
+    // Add HTML content to the PDF
+    doc.html(htmlContent, {
+        callback: function (doc) {
+            // Save the PDF as bytes
+            const pdfBytes = doc.output('arraybuffer');
+            // You can now do something with the pdfBytes, like sending them to a server
+            console.log(_arrayBufferToBase64(pdfBytes));
+        }
+    });
+}
+
+// Call the function to generate PDF
+generatePDF();
+  </script>
+</body>
+</html>
