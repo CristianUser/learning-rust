@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{env::current_dir, fmt::Debug, io::Write, path, process::Command};
 
 use printers;
 use headless_chrome;
@@ -9,6 +9,23 @@ use serde::{Deserialize, Serialize};
 struct Printer {
     name: String,
     is_default: bool,
+}
+
+fn print_pdf(filepath: &str, printer_name: &str) -> std::process::Output {
+    let output = if cfg!(target_os = "windows") {
+        Command::new("src/PDFtoPrinter.exe")
+            .args([filepath, printer_name])
+            .output()
+            .expect("failed to execute process")
+    } else {
+        Command::new("sh")
+            .arg("-c")
+            .arg("echo hello")
+            .output()
+            .expect("failed to execute process")
+    };
+
+    return output;
 }
 
 fn get_printers_list() -> Vec<Printer> {
@@ -55,6 +72,7 @@ struct PrintJobInput {
 #[post("/print")]
 async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
     let printer_name = &job.printer_name;
+    let filename = "src/output.pdf";
     // let content = &job.content;
 
     let printer = printers::get_printer_by_name(printer_name);
@@ -62,19 +80,30 @@ async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
         return Err(actix_web::error::ErrorNotFound("Printer not found"));
     }
 
-    // if job.format == "html" {
-    let browser = headless_chrome::Browser::default().unwrap();
-    let tab = browser.new_tab().unwrap();
-    let data = format!("data:text/html,{}", &job.content.to_owned());
-    tab.navigate_to(&data).unwrap();
-    tab.wait_until_navigated().unwrap();
-    let content = tab.print_to_pdf(None).unwrap();
-    // }
+    if job.format == "html" {
+        let browser = headless_chrome::Browser::default().unwrap();
+        let tab = browser.new_tab().unwrap();
+        let data = format!("data:text/html,{}", &job.content.to_owned());
+        tab.navigate_to(&data).unwrap();
+        tab.wait_until_navigated().unwrap();
+        let content = tab.print_to_pdf(None).unwrap();
+        let mut file = std::fs::File::create(filename).unwrap();
+        file.write_all(content.as_slice()).unwrap();
 
-    let printer = printer.unwrap();
-    let result = printer.print(content.as_slice(), Some("Everything"));
-    if result.is_err() {
+    }
+    
+    // write content to file for debugging
+    let output = print_pdf(filename, printer_name);
+    if !output.status.success() {
+        println!("{:?}", output);
         return Err(actix_web::error::ErrorInternalServerError("Failed to print"));
+    }
+
+    // remove file after printing
+    let path = path::Path::new(filename);
+    if path.exists() {
+        std::
+        fs::remove_file(path).unwrap();
     }
 
     Ok(HttpResponse::Ok().json(Message {
