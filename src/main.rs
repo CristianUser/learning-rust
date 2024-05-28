@@ -1,4 +1,4 @@
-use std::{env::current_dir, fmt::Debug, io::Write, path, process::Command};
+use std::{fmt::Debug, io::Write, path, process::Command};
 
 use printers;
 use headless_chrome;
@@ -13,7 +13,7 @@ struct Printer {
 
 fn print_pdf(filepath: &str, printer_name: &str) -> std::process::Output {
     let output = if cfg!(target_os = "windows") {
-        Command::new("src/PDFtoPrinter.exe")
+        Command::new("./PDFtoPrinter.exe")
             .args([filepath, printer_name])
             .output()
             .expect("failed to execute process")
@@ -72,7 +72,7 @@ struct PrintJobInput {
 #[post("/print")]
 async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
     let printer_name = &job.printer_name;
-    let filename = "src/output.pdf";
+    let filename = "./output.pdf";
     // let content = &job.content;
 
     let printer = printers::get_printer_by_name(printer_name);
