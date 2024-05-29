@@ -63,7 +63,23 @@ pub async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
         let content = tab.print_to_pdf(None).unwrap();
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all(content.as_slice()).unwrap();
+    }
 
+    if job.format == "url" {
+        let browser = headless_chrome::Browser::default().unwrap();
+        let tab = browser.new_tab().unwrap();
+        tab.navigate_to(&job.content).unwrap();
+        tab.wait_until_navigated().unwrap();
+        let content = tab.print_to_pdf(None).unwrap();
+        let mut file = std::fs::File::create(filename).unwrap();
+        file.write_all(content.as_slice()).unwrap();
+    }
+
+    if job.format == "pdf" {
+        let mut file = std::fs::File::create(filename).unwrap();
+        // convert base64 to bytes
+        let content = base64::decode(&job.content).unwrap();
+        file.write_all(&content).unwrap();
     }
     
     // write content to file for debugging

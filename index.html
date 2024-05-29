@@ -21,13 +21,13 @@
       // Function to generate PDF from HTML content
       function generatePDF() {
         // Create a new jsPDF instance
-        const doc = new jspdf.jsPDF();
+        const jspdfInstance = new jspdf.jsPDF();
 
         // Get the HTML content
         const htmlContent = document.getElementById("htmlContent");
 
         // Add HTML content to the PDF
-        doc.html(htmlContent, {
+        jspdfInstance.html(htmlContent, {
           callback: function (doc) {
             // Save the PDF as bytes
             const pdfBytes = doc.output("arraybuffer");
@@ -59,7 +59,7 @@
     <div id="htmlContent">
       <h1>Headline</h1>
       <p>this is the rest of the content</p>
-      <button onclick="generatePDF()">Generate PDF</button>
     </div>
+    <button onclick="generatePDF()">Generate PDF</button>
   </body>
 </html>
