@@ -779,6 +779,7 @@ dependencies = [
  "base64 0.22.0",
  "headless_chrome",
  "printers",
+ "rand",
  "serde",
 ]
 

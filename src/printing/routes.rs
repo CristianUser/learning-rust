@@ -5,9 +5,30 @@ use serde::{Deserialize, Serialize};
 
 mod utils;
 
+fn random_string(length: usize) -> String {
+    use rand::distributions::Alphanumeric;
+    use rand::Rng;
+
+    let rand_string: String = rand::thread_rng()
+    .sample_iter(&Alphanumeric)
+    .take(length)
+    .map(char::from)
+    .collect();
+
+    return rand_string
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct Message {
     message: String,
+}
+
+fn get_temporary_file_path() -> String {
+    // random temp file name
+    let filename = format!("output_{}.pdf", random_string(7));
+    let mut path = std::env::temp_dir();
+    path.push(filename);
+    path.to_str().unwrap().to_owned()
 }
 
 #[get("/printers")]
@@ -25,7 +46,7 @@ struct PrintJobInput {
 #[post("/print")]
 pub async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
     let printer_name = &job.printer_name;
-    let filename = "./output.pdf";
+    let filename = &get_temporary_file_path();
     // let content = &job.content;
 
     let printer = printers::get_printer_by_name(printer_name);
