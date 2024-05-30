@@ -1,4 +1,4 @@
-use std::{io::Write, path};
+use std::{collections::HashMap, io::Write, path};
 use headless_chrome;
 use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
@@ -40,7 +40,8 @@ pub async fn list_printers() -> impl Responder {
 struct PrintJobInput {
     printer_name: String,
     content: String,
-    format: String
+    format: String,
+    auth_token: String, // only used if format is url
 }
 
 #[post("/print")]
@@ -68,6 +69,15 @@ pub async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
     if job.format == "url" {
         let browser = headless_chrome::Browser::default().unwrap();
         let tab = browser.new_tab().unwrap();
+        if !job.auth_token.is_empty() {
+            let auth_header = format!("Bearer {}", job.auth_token);
+            let mut headers = HashMap::new();
+            headers.insert("Authorization", auth_header.as_str());
+            let result = tab.set_extra_http_headers(headers);
+            if result.is_err() {
+                return Err(actix_web::error::ErrorInternalServerError("Failed to set headers"));
+            }
+        }
         tab.navigate_to(&job.content).unwrap();
         tab.wait_until_navigated().unwrap();
         let content = tab.print_to_pdf(None).unwrap();
@@ -85,7 +95,7 @@ pub async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
     // write content to file for debugging
     let output = utils::print_pdf(filename, printer_name);
     if !output.status.success() {
-        println!("{:?}", output);
+        println!("{:?}", output.stderr);
         return Err(actix_web::error::ErrorInternalServerError("Failed to print"));
     }
 
