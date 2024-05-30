@@ -1,5 +1,5 @@
 use std::{collections::HashMap, io::Write, path};
-use headless_chrome;
+use headless_chrome::{self, types::PrintToPdfOptions};
 use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
@@ -80,7 +80,13 @@ pub async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
         }
         tab.navigate_to(&job.content).unwrap();
         tab.wait_until_navigated().unwrap();
-        let content = tab.print_to_pdf(None).unwrap();
+        let content = tab.print_to_pdf({
+            let options = PrintToPdfOptions {
+                prefer_css_page_size: Some(true),
+                ..Default::default()
+            };
+            Some(options)
+        }).unwrap();
         let mut file = std::fs::File::create(filename).unwrap();
         file.write_all(content.as_slice()).unwrap();
     }
