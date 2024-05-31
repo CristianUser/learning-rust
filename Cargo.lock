@@ -788,19 +788,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4345964bb142484797b161f473a503a434de77149dd8c7427788c6e13379388"
 
 [[package]]
-name = "learning-rust"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-web",
- "base64 0.22.0",
- "headless_chrome",
- "printers",
- "rand",
- "serde",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.153"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -971,6 +958,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "601970f11a0c22e37e10f0e7432c4926e714f04f020ad8f87d9784e051311d2d"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "printing-service"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-web",
+ "base64 0.22.0",
+ "headless_chrome",
+ "printers",
+ "rand",
+ "serde",
 ]
 
 [[package]]
