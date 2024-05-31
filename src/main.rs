@@ -18,7 +18,7 @@ async fn health() -> impl Responder {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+pub async fn main() -> std::io::Result<()> {
     let server = HttpServer::new(|| {
         let cors = Cors::permissive(); // Change this to configure your CORS settings
 

@@ -35,13 +35,14 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "C:\Users\theim\Development\learning-rust\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\theim\Development\learning-rust\target\release\PDFtoPrinter.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\theim\Development\learning-rust\target\release\printing-service.d"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\theim\Development\learning-rust\target\release\win.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
-Filename: {sys}\sc.exe; Parameters: "create PronesoftPrintingService start= auto binPath= ""{app}\{#MyAppExeName}""" ; Flags: runhidden
+Filename: {sys}\sc.exe; Parameters: "create PronesoftPrintingService start= auto binPath= ""{app}\win.exe""" ; Flags: runhidden
 
 [UninstallRun]
 Filename: {sys}\sc.exe; Parameters: "stop PronesoftPrintingService" ; Flags: runhidden
