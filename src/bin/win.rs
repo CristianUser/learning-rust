@@ -23,7 +23,8 @@ fn main() {
 
 #[cfg(windows)]
 mod printing_service {
-    use std::{ffi::OsString, sync::mpsc, time::Duration};
+    use parking_lot::Mutex;
+    use std::{ffi::OsString, sync::mpsc::{self, Receiver}, thread, time::Duration};
     use windows_service::{
         define_windows_service,
         service::{
@@ -38,7 +39,9 @@ mod printing_service {
     const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
 
     use actix_cors::Cors;
-    use actix_web::{get, App, HttpResponse, HttpServer, Responder};
+    use actix_web::{
+        dev::ServerHandle, get, middleware, web, App, HttpResponse, HttpServer, Responder
+    };
 
     #[path = "../../printing/routes.rs"]
     mod routes;
@@ -58,20 +61,60 @@ mod printing_service {
     }
 
     #[actix_web::main]
-    pub async fn start_server() -> std::io::Result<()> {
-        let server = HttpServer::new(|| {
-            let cors = Cors::permissive(); // Change this to configure your CORS settings
+    pub async fn start_server(shutdown_rx: Receiver<()>) -> std::io::Result<()> {
+        // create the stop handle container
+        let stop_handle = web::Data::new(StopHandle::default());
 
-            App::new()
-                .wrap(cors)
-                .service(health)
-                .service(list_printers)
-                .service(print)
+        let srv = HttpServer::new({
+            let stop_handle = stop_handle.clone();
+
+            move || {
+                let cors = Cors::permissive(); // Change this to configure your CORS settings
+                                               // give the server a Sender in .data
+                App::new()
+                    .wrap(cors)
+                    .app_data(stop_handle.clone())
+                    .service(health)
+                    .service(list_printers)
+                    .service(print)
+                    .wrap(middleware::Logger::default())
+            }
         })
-        .bind(("127.0.0.1", 1829))?;
-
+        .bind(("127.0.0.1", 1829))?
+        .run();
         println!("Listening on port 1829");
-        server.run().await
+
+        // register the server handle with the stop handle
+        stop_handle.register(srv.handle());
+
+        // Poll shutdown event in a separate thread to avoid blocking the main thread and receive requests
+        thread::spawn(move || {
+            while let Ok(_) = shutdown_rx.recv() {
+                stop_handle.stop(true);
+                // Break the loop either upon stop or channel disconnect
+                break;
+            }
+        });
+
+        srv.await
+    }
+
+    #[derive(Default)]
+    struct StopHandle {
+        inner: Mutex<Option<ServerHandle>>,
+    }
+
+    impl StopHandle {
+        /// Sets the server handle to stop.
+        pub(crate) fn register(&self, handle: ServerHandle) {
+            *self.inner.lock() = Some(handle);
+        }
+
+        /// Sends stop signal through contained server handle.
+        pub(crate) fn stop(&self, graceful: bool) {
+            #[allow(clippy::let_underscore_future)]
+            let _ = self.inner.lock().as_ref().unwrap().stop(graceful);
+        }
     }
 
     pub fn run() -> Result<()> {
@@ -140,21 +183,7 @@ mod printing_service {
         })?;
 
         // Start the service worker loop.
-        let _ = start_server();
-
-        // Poll shutdown event.
-        while let Ok(_) = shutdown_rx.recv() {}
-
-        // loop {
-        //     // Poll shutdown event.
-        //     match shutdown_rx.recv_timeout(Duration::from_secs(1)) {
-        //         // Break the loop either upon stop or channel disconnect
-        //         Ok(_) | Err(mpsc::RecvTimeoutError::Disconnected) => break,
-
-        //         // Continue work if no events were received within the timeout
-        //         Err(mpsc::RecvTimeoutError::Timeout) => (),
-        //     };
-        // }
+        let _ = start_server(shutdown_rx);
 
         // Tell the system that service has stopped.
         status_handle.set_service_status(ServiceStatus {
