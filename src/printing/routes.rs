@@ -1,4 +1,5 @@
 use std::{collections::HashMap, io::Write, path};
+use base64::{Engine as _, engine::general_purpose};
 use headless_chrome::{self, types::PrintToPdfOptions};
 use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
@@ -94,8 +95,8 @@ pub async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
     if job.format == "pdf" {
         let mut file = std::fs::File::create(filename).unwrap();
         // convert base64 to bytes
-        let content = base64::decode(&job.content).unwrap();
-        file.write_all(&content).unwrap();
+        let content = general_purpose::STANDARD.decode(&job.content).unwrap();
+        file.write_all(content.as_slice()).unwrap();
     }
     
     // write content to file for debugging

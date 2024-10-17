@@ -48,15 +48,19 @@ mod printing_service {
     use routes::{list_printers, print};
     use serde::Serialize;
 
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+
     #[derive(Debug, Serialize)]
     struct Health {
         status: String,
+        version: String,
     }
 
     #[get("/health")]
     async fn health() -> impl Responder {
         HttpResponse::Ok().json(Health {
             status: "ok".to_owned(),
+            version: VERSION.to_owned(),
         })
     }
 

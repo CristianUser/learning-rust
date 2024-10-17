@@ -43,6 +43,7 @@
                 printer_name: "Microsoft Print to PDF",
                 content: _arrayBufferToBase64(pdfBytes),
                 format: "pdf",
+                auth_token: ""
               }),
             })
               .then((response) => response.json())
