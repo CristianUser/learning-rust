@@ -56,51 +56,61 @@ pub async fn print(job: web::Json<PrintJobInput>) -> impl Responder {
         return Err(actix_web::error::ErrorNotFound("Printer not found"));
     }
 
-    if job.format == "html" {
-        let browser = headless_chrome::Browser::default().unwrap();
-        let tab = browser.new_tab().unwrap();
-        let data = format!("data:text/html,{}", &job.content.to_owned());
-        tab.navigate_to(&data).unwrap();
-        tab.wait_until_navigated().unwrap();
-        let content = tab.print_to_pdf(None).unwrap();
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all(content.as_slice()).unwrap();
-    }
-
-    if job.format == "url" {
-        let browser = headless_chrome::Browser::default().unwrap();
-        let tab = browser.new_tab().unwrap();
-        if !job.auth_token.is_empty() {
-            let auth_header = format!("Bearer {}", job.auth_token);
-            let mut headers = HashMap::new();
-            headers.insert("Authorization", auth_header.as_str());
-            let result = tab.set_extra_http_headers(headers);
-            if result.is_err() {
-                return Err(actix_web::error::ErrorInternalServerError("Failed to set headers"));
-            }
-        }
-        tab.navigate_to(&job.content).unwrap();
-        tab.wait_until_navigated().unwrap();
-        let content = tab.print_to_pdf({
-            let options = PrintToPdfOptions {
-                prefer_css_page_size: Some(true),
-                ..Default::default()
-            };
-            Some(options)
-        }).unwrap();
-        let mut file = std::fs::File::create(filename).unwrap();
-        file.write_all(content.as_slice()).unwrap();
-    }
-
-    if job.format == "pdf" {
+    let output = if job.format == "raw" {
         let mut file = std::fs::File::create(filename).unwrap();
         // convert base64 to bytes
         let content = general_purpose::STANDARD.decode(&job.content).unwrap();
         file.write_all(content.as_slice()).unwrap();
-    }
-    
-    // write content to file for debugging
-    let output = utils::print_pdf(filename, printer_name);
+        
+        utils::print_raw(filename, printer_name)
+    } else {
+        if job.format == "html" {
+            let browser = headless_chrome::Browser::default().unwrap();
+            let tab = browser.new_tab().unwrap();
+            let data = format!("data:text/html,{}", &job.content.to_owned());
+            tab.navigate_to(&data).unwrap();
+            tab.wait_until_navigated().unwrap();
+            let content = tab.print_to_pdf(None).unwrap();
+            let mut file = std::fs::File::create(filename).unwrap();
+            file.write_all(content.as_slice()).unwrap();
+        }
+
+        if job.format == "url" {
+            let browser = headless_chrome::Browser::default().unwrap();
+            let tab = browser.new_tab().unwrap();
+            if !job.auth_token.is_empty() {
+                let auth_header = format!("Bearer {}", job.auth_token);
+                let mut headers = HashMap::new();
+                headers.insert("Authorization", auth_header.as_str());
+                let result = tab.set_extra_http_headers(headers);
+                if result.is_err() {
+                    return Err(actix_web::error::ErrorInternalServerError("Failed to set headers"));
+                }
+            }
+            tab.navigate_to(&job.content).unwrap();
+            tab.wait_until_navigated().unwrap();
+            let content = tab.print_to_pdf({
+                let options = PrintToPdfOptions {
+                    prefer_css_page_size: Some(true),
+                    ..Default::default()
+                };
+                Some(options)
+            }).unwrap();
+            let mut file = std::fs::File::create(filename).unwrap();
+            file.write_all(content.as_slice()).unwrap();
+        }
+
+        if job.format == "pdf" {
+            let mut file = std::fs::File::create(filename).unwrap();
+            // convert base64 to bytes
+            let content = general_purpose::STANDARD.decode(&job.content).unwrap();
+            file.write_all(content.as_slice()).unwrap();
+        }
+        
+        // write content to file for debugging
+        utils::print_pdf(filename, printer_name)
+    };
+
     if !output.status.success() {
         println!("{:?}", output.stderr);
         return Err(actix_web::error::ErrorInternalServerError("Failed to print"));

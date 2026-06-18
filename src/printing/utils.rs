@@ -53,3 +53,20 @@ pub fn print_pdf(filepath: &str, printer_name: &str) -> std::process::Output {
 
   return output;
 }
+
+pub fn print_raw(filepath: &str, printer_name: &str) -> std::process::Output {
+  println!("Printing raw file: {} to printer: {}", filepath, printer_name);
+  let output = if cfg!(target_os = "windows") {
+      Command::new("cmd")
+          .args(["/C", "copy", "/B", filepath, format!("\\\\localhost\\{}", printer_name).as_str()])
+          .output()
+          .expect("failed to execute process")
+  } else {
+      Command::new("lp")
+          .args(["-d", printer_name, "-o", "raw", filepath])
+          .output()
+          .expect("failed to execute process")
+  };
+
+  return output;
+}

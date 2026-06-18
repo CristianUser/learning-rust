@@ -3,6 +3,7 @@ name = "printing-service"
 version = "0.1.1"
 edition = "2021"
 build = "build.rs"
+default-run = "printing-service"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,3 +17,20 @@ rand = "0.8.5"
 actix-cors = "0.7.0"
 windows-service = "0.7.0"
 parking_lot = "0.12.3"
+
+[package.metadata.deb]
+maintainer = "Pronesoft SRL <soporte@pronesoft.com>"
+copyright = "2024, Pronesoft SRL"
+license-file = ["LICENSE", "0"]
+depends = "$auto"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/printing-service", "/usr/bin/printing-service", "755"],
+    ["packaging/linux/printing-service.service", "/lib/systemd/system/printing-service.service", "644"],
+]
+
+[package.metadata.deb.systemd-units]
+unit-name = "printing-service"
+enable = true
+start = true
