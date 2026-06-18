@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Printing Service"
-#define MyAppVersion "0.1.1"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "Pronesoft SRL"
 #define MyAppURL "https://pronesoft.com/"
 #define MyAppExeName "printing-service.exe"
@@ -35,6 +35,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "..\..\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\target\release\PDFtoPrinter.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\target\release\printing-service.d"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\target\release\win.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
